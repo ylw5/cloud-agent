@@ -1,6 +1,10 @@
 {
   "extends": "agents/tsconfig",
   "compilerOptions": {
-    // add your overrides here
+    "ignoreDeprecations": "6.0",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   }
 }
