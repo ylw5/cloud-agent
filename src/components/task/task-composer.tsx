@@ -31,9 +31,7 @@ export function TaskComposer({ status, onSubmit, onStop }: TaskComposerProps) {
 
   return (
     <div className="shrink-0 px-4 pb-4">
-      <PromptInput
-        onSubmit={handleSubmit}
-      >
+      <PromptInput onSubmit={handleSubmit}>
         <PromptInputBody>
           <PromptInputTextarea
             onChange={(event) => setInput(event.target.value)}
@@ -42,12 +40,8 @@ export function TaskComposer({ status, onSubmit, onStop }: TaskComposerProps) {
           />
         </PromptInputBody>
         <PromptInputFooter>
-          <PromptInputTools>
-          </PromptInputTools>
-          <PromptInputSubmit
-            onStop={onStop}
-            status={chatStatus}
-          />
+          <PromptInputTools></PromptInputTools>
+          <PromptInputSubmit onStop={onStop} status={chatStatus} />
         </PromptInputFooter>
       </PromptInput>
     </div>

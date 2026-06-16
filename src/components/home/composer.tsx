@@ -8,7 +8,6 @@ import {
   PromptInputTools,
   type PromptInputMessage
 } from "@/components/ai-elements/prompt-input";
-import { getSelected } from "@/lib/storage";
 
 type ComposerProps = {
   disabled?: boolean;
@@ -21,18 +20,12 @@ export function Composer({ disabled, onSubmit }: ComposerProps) {
   function handleSubmit(message: PromptInputMessage) {
     const text = message.text.trim();
     if (!text || disabled) return;
-    const { repo } = getSelected();
-    if (!repo) return;
     onSubmit(text);
     setInput("");
   }
 
-  const { repo } = getSelected();
-
   return (
-    <PromptInput
-      onSubmit={handleSubmit}
-    >
+    <PromptInput onSubmit={handleSubmit}>
       <PromptInputBody>
         <PromptInputTextarea
           className="min-h-28"
@@ -42,9 +35,8 @@ export function Composer({ disabled, onSubmit }: ComposerProps) {
         />
       </PromptInputBody>
       <PromptInputFooter>
-        <PromptInputTools>
-        </PromptInputTools>
-        <PromptInputSubmit  />
+        <PromptInputTools></PromptInputTools>
+        <PromptInputSubmit />
       </PromptInputFooter>
     </PromptInput>
   );

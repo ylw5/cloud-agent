@@ -28,10 +28,6 @@ export function TaskHeader({
   onClear,
   onNewTask
 }: TaskHeaderProps) {
-  const path = meta?.repo
-    ? `${meta.repo}${meta.branch ? ` · ${meta.branch}` : ""}`
-    : "";
-
   return (
     <header className="flex shrink-0 items-center gap-3 border-b bg-muted/30 px-4 py-3">
       <Button onClick={onBack} size="icon-sm" type="button" variant="ghost">
@@ -49,9 +45,6 @@ export function TaskHeader({
             </Badge>
           ) : null}
         </div>
-        {path ? (
-          <p className="truncate text-xs text-muted-foreground">{path}</p>
-        ) : null}
       </div>
 
       <DropdownMenu>

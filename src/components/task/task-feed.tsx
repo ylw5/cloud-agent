@@ -26,7 +26,10 @@ export function TaskFeed({
   stickToBottomOnOpen = false
 }: TaskFeedProps) {
   return (
-    <Conversation className="flex-1" initial={stickToBottomOnOpen ? "smooth" : false}>
+    <Conversation
+      className="flex-1"
+      initial={stickToBottomOnOpen ? "smooth" : false}
+    >
       <ConversationContent className="gap-4 px-4 pt-4 pb-2">
         {messages.map((message, index) => (
           <MessageParts
@@ -37,7 +40,7 @@ export function TaskFeed({
           />
         ))}
         <TaskStatusRows hasMessages={messages.length > 0} state={taskState} />
-          <div className="flex-1 min-h-20"></div>
+        <div className="flex-1 min-h-20"></div>
       </ConversationContent>
       <ConversationScrollButton />
     </Conversation>

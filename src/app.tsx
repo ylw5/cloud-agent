@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { HomeView } from "@/components/home/home-view";
 import { TaskView } from "@/components/task/task-view";
-import { buildTaskPrompt, getSelected, upsertTask } from "@/lib/storage";
+import { upsertTask } from "@/lib/storage";
 
 type View =
   | { kind: "home" }
@@ -20,37 +20,28 @@ export default function App() {
   }
 
   function handleHomeSubmit(prompt: string) {
-    const { repo, branch } = getSelected();
-    if (!repo) return;
-
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
-    const fullPrompt = buildTaskPrompt(repo, branch, prompt);
 
     upsertTask({
       id,
       title: prompt.slice(0, 80),
-      repo,
-      branch,
       status: "running",
       createdAt: now,
       updatedAt: now
     });
 
     bumpRefresh();
-    setView({ kind: "task", taskId: id, initialPrompt: fullPrompt });
+    setView({ kind: "task", taskId: id, initialPrompt: prompt });
   }
 
   function handleNewTask() {
-    const { repo, branch } = getSelected();
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
 
     upsertTask({
       id,
       title: "",
-      repo,
-      branch,
       status: "idle",
       createdAt: now,
       updatedAt: now

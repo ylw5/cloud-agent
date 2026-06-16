@@ -15,7 +15,6 @@ import {
   ToolInput,
   ToolOutput
 } from "@/components/ai-elements/tool";
-import { stripRepoContext } from "@/lib/storage";
 import { formatToolOutput, getToolLabel } from "@/lib/tool-labels";
 import { isToolUIPart, type UIMessage } from "ai";
 import { Fragment } from "react";
@@ -55,8 +54,7 @@ export function MessageParts({
 
       {message.parts.map((part, index) => {
         if (part.type === "text") {
-          const text =
-            message.role === "user" ? stripRepoContext(part.text) : part.text;
+          const text = part.text;
           if (!text.trim()) return null;
 
           return (
