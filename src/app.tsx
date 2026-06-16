@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { HomeView } from "@/components/home/home-view";
 import { TaskView } from "@/components/task/task-view";
-import { upsertTask } from "@/lib/storage";
+import { createTask } from "@/lib/storage";
 
 type View =
   | { kind: "home" }
@@ -19,36 +19,12 @@ export default function App() {
     setView({ kind: "task", taskId: id });
   }
 
-  function handleHomeSubmit(prompt: string) {
+  async function handleHomeSubmit(prompt: string) {
     const id = crypto.randomUUID();
-    const now = new Date().toISOString();
 
-    upsertTask({
-      id,
-      title: prompt.slice(0, 80),
-      status: "running",
-      createdAt: now,
-      updatedAt: now
-    });
-
+    await createTask({ id, title: prompt.slice(0, 80) });
     bumpRefresh();
     setView({ kind: "task", taskId: id, initialPrompt: prompt });
-  }
-
-  function handleNewTask() {
-    const id = crypto.randomUUID();
-    const now = new Date().toISOString();
-
-    upsertTask({
-      id,
-      title: "",
-      status: "idle",
-      createdAt: now,
-      updatedAt: now
-    });
-
-    bumpRefresh();
-    setView({ kind: "task", taskId: id });
   }
 
   if (view.kind === "task") {
@@ -60,7 +36,6 @@ export default function App() {
           setView({ kind: "home" });
         }}
         onMetaChange={bumpRefresh}
-        onNewTask={handleNewTask}
         taskId={view.taskId}
       />
     );

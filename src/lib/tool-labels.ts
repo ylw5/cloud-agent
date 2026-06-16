@@ -1,39 +1,69 @@
-import { getToolName, type DynamicToolUIPart, type ToolUIPart } from "ai";
+import type { DynamicToolUIPart, ToolUIPart } from "ai";
 
 type ToolInput = Record<string, unknown>;
 export type ToolPart = ToolUIPart | DynamicToolUIPart;
 
+export function getToolName(part: ToolPart): string {
+  return part.type === "dynamic-tool"
+    ? part.toolName || "tool"
+    : part.type.slice("tool-".length);
+}
+
+function getName(part: ToolPart): string {
+  return getToolName(part);
+}
+
+function getToolInput(part: ToolPart): ToolInput {
+  const input = "input" in part ? part.input : undefined;
+  return input && typeof input === "object" ? (input as ToolInput) : {};
+}
+
+function fallbackBashTitle(command: string) {
+  const program = command.trim().split(/\s+/)[0];
+  return program ? `Run ${program}` : "Run command";
+}
+
+export function getBashTitle(part: ToolPart): string {
+  const input = getToolInput(part);
+  const inputTitle = typeof input.title === "string" ? input.title.trim() : "";
+  if (inputTitle) return inputTitle;
+
+  const output =
+    "output" in part && part.output && typeof part.output === "object"
+      ? (part.output as { title?: string })
+      : null;
+  const outputTitle =
+    typeof output?.title === "string" ? output.title.trim() : "";
+  if (outputTitle) return outputTitle;
+
+  const command = typeof input.command === "string" ? input.command : "";
+  return fallbackBashTitle(command);
+}
+
+export type ToolDisplayStyle = "plain" | "boxed";
+
+export function getToolDisplayStyle(part: ToolPart): ToolDisplayStyle {
+  const name = getName(part);
+  if (name === "bash") return "boxed";
+  return "plain";
+}
+
 export function getToolLabel(part: ToolPart): string {
-  const name = getToolName(part);
-  const input = ("input" in part ? part.input : {}) as ToolInput;
+  const name = getName(part);
+  const input = getToolInput(part);
 
   switch (name) {
-    case "bash": {
-      const command = typeof input.command === "string" ? input.command : "";
-      return command ? `$ ${command}` : "$ bash";
-    }
-    case "list_files": {
-      const path = typeof input.path === "string" ? input.path : "/workspace";
-      const output = "output" in part ? part.output : undefined;
-      if (
-        part.state === "output-available" &&
-        output &&
-        typeof output === "object" &&
-        "files" in output &&
-        Array.isArray((output as { files: unknown }).files)
-      ) {
-        const count = (output as { files: unknown[] }).files.length;
-        return `Explored ${count} files`;
-      }
-      return `$ List ${path}`;
-    }
+    case "bash":
+      return `$ ${getBashTitle(part)}`;
     case "read_file": {
       const path = typeof input.path === "string" ? input.path : "file";
-      return `Read ${path}`;
+      const fileName = path.split("/").pop() || path;
+      return `Read ${fileName}`;
     }
     case "write_file": {
       const path = typeof input.path === "string" ? input.path : "file";
-      return `Write ${path}`;
+      const fileName = path.split("/").pop() || path;
+      return `Write ${fileName}`;
     }
     default:
       return name;
@@ -50,21 +80,43 @@ export function formatToolOutput(part: ToolPart): string | null {
   }
 
   const output = part.output;
-  const name = getToolName(part);
+  const name = getName(part);
+  const input = getToolInput(part);
 
   if (name === "bash" && output && typeof output === "object") {
+    const command = typeof input.command === "string" ? input.command : "";
     const result = output as {
       stdout?: string;
       stderr?: string;
       exitCode?: number;
-      success?: boolean;
     };
-    const chunks = [
+    const body = [
       result.stdout?.trim(),
       result.stderr?.trim() ? `[stderr]\n${result.stderr.trim()}` : undefined,
-      result.exitCode !== undefined ? `[exit ${result.exitCode}]` : undefined
-    ].filter(Boolean);
-    return chunks.join("\n\n") || "(no output)";
+      result.exitCode !== undefined && result.exitCode !== 0
+        ? `[exit ${result.exitCode}]`
+        : undefined
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
+    if (!command && !body) return null;
+    if (!command) return body || "(no output)";
+    return body ? `$ ${command}\n\n${body}` : `$ ${command}`;
+  }
+
+  if (name === "read_file" && output && typeof output === "object") {
+    const content =
+      "content" in output && typeof output.content === "string"
+        ? output.content
+        : null;
+    return content ?? JSON.stringify(output, null, 2);
+  }
+
+  if (name === "write_file" && output && typeof output === "object") {
+    const path =
+      "path" in output && typeof output.path === "string" ? output.path : null;
+    return path ? `Wrote ${path}` : "File saved";
   }
 
   if (typeof output === "string") return output;

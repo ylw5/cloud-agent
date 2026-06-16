@@ -1,20 +1,8 @@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import {
-  formatRelativeTime,
-  type TaskMeta,
-  type TaskStatus
-} from "@/lib/storage";
-
-const statusVariant: Record<
-  TaskStatus,
-  "default" | "secondary" | "destructive" | "outline"
-> = {
-  idle: "secondary",
-  running: "default",
-  done: "secondary",
-  error: "destructive"
-};
+import { formatRelativeTime, type TaskMeta } from "@/lib/storage";
+import { getTaskStatusBadgeProps } from "@/lib/task-status";
+import { cn } from "@/lib/utils";
 
 type HistoryItemProps = {
   task: TaskMeta;
@@ -23,16 +11,20 @@ type HistoryItemProps = {
 
 export function HistoryItem({ task, onOpen }: HistoryItemProps) {
   const title = task.title || "New task";
+  const badge = getTaskStatusBadgeProps(task.status);
 
   return (
     <button
       aria-label={`Open task: ${title}`}
-      className="flex w-full items-start gap-4 rounded-lg text-left transition-colors hover:bg-muted/50"
+      className="flex w-full items-start gap-4 rounded-lg text-left transition-colors hover:bg-muted/95 p-3"
       onClick={() => onOpen(task.id)}
       type="button"
     >
       <Card className="flex h-16 w-24 shrink-0 flex-col items-start justify-between rounded-lg p-2 shadow-none">
-        <Badge className="text-[10px]" variant={statusVariant[task.status]}>
+        <Badge
+          className={cn("text-[10px]", badge.className)}
+          variant={badge.variant}
+        >
           {task.status}
         </Badge>
       </Card>

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAgent } from "agents/react";
 import { useAgentChat } from "@cloudflare/ai-chat/react";
-import { getTask, updateTask } from "@/lib/storage";
+import { getTask, type TaskMeta } from "@/lib/storage";
 import { TaskComposer } from "./task-composer";
 import { TaskFeed } from "./task-feed";
 import { TaskHeader } from "./task-header";
@@ -11,6 +11,8 @@ type TaskState = {
   title: string;
   sandboxId: string;
   createdAt: string;
+  runStartedAt: string;
+  runTimings: Record<string, number>;
   error: string | null;
 };
 
@@ -18,7 +20,6 @@ type TaskViewProps = {
   taskId: string;
   initialPrompt?: string;
   onBack: () => void;
-  onNewTask: () => void;
   onMetaChange?: () => void;
 };
 
@@ -26,11 +27,10 @@ export function TaskView({
   taskId,
   initialPrompt,
   onBack,
-  onNewTask,
   onMetaChange
 }: TaskViewProps) {
   const sentInitial = useRef(false);
-  const meta = getTask(taskId);
+  const [meta, setMeta] = useState<TaskMeta | undefined>();
   const [taskState, setTaskState] = useState<TaskState | null>(null);
 
   const agent = useAgent<TaskState>({
@@ -38,20 +38,23 @@ export function TaskView({
     name: taskId,
     onStateUpdate: (state) => {
       setTaskState(state);
-      updateTask(taskId, {
-        title: state.title || meta?.title || "",
-        status: state.status,
-        updatedAt: new Date().toISOString()
-      });
       onMetaChange?.();
     }
   });
 
-  const { messages, sendMessage, status, stop, clearHistory } = useAgentChat({
+  const { messages, sendMessage, status, stop } = useAgentChat({
     agent
   });
 
   const running = status !== "ready";
+  const feedTaskState =
+    taskState ??
+    (meta
+      ? {
+          status: meta.status,
+          runStartedAt: meta.status === "running" ? meta.updatedAt : undefined
+        }
+      : null);
   const title =
     taskState?.title ||
     meta?.title ||
@@ -63,24 +66,32 @@ export function TaskView({
   }, [taskId]);
 
   useEffect(() => {
+    let ignore = false;
+    setMeta(undefined);
+    getTask(taskId)
+      .then((task) => {
+        if (!ignore) setMeta(task);
+      })
+      .catch(() => {
+        if (!ignore) setMeta(undefined);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [taskId]);
+
+  useEffect(() => {
     if (!initialPrompt || sentInitial.current || messages.length > 0) return;
     sentInitial.current = true;
     sendMessage({ text: initialPrompt });
   }, [initialPrompt, messages.length, sendMessage]);
-
-  function handleNewTask() {
-    onNewTask();
-  }
 
   return (
     <div className="flex h-screen flex-col bg-muted/30">
       <TaskHeader
         meta={meta}
         onBack={onBack}
-        onClear={clearHistory}
-        onNewTask={handleNewTask}
-        onStop={stop}
-        running={running}
+        status={taskState?.status ?? meta?.status}
         title={title}
       />
       <div className="flex min-h-0 flex-1 justify-center overflow-hidden px-4">
@@ -89,7 +100,7 @@ export function TaskView({
             isStreaming={running}
             messages={messages}
             stickToBottomOnOpen={!!initialPrompt}
-            taskState={taskState}
+            taskState={feedTaskState}
           />
           <TaskComposer
             onStop={stop}

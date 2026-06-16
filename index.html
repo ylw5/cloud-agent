@@ -11,8 +11,9 @@
     <link rel="icon" href="/favicon.ico" />
     <script>
       (() => {
-        const mode = localStorage.getItem("theme") || "light";
+        const mode = localStorage.getItem("theme") || "dark";
         document.documentElement.setAttribute("data-mode", mode);
+        document.documentElement.classList.toggle("dark", mode === "dark");
         document.documentElement.style.colorScheme = mode;
       })();
     </script>

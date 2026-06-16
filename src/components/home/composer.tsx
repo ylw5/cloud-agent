@@ -1,43 +1,17 @@
-import { useState } from "react";
-import {
-  PromptInput,
-  PromptInputBody,
-  PromptInputFooter,
-  PromptInputSubmit,
-  PromptInputTextarea,
-  PromptInputTools,
-  type PromptInputMessage
-} from "@/components/ai-elements/prompt-input";
+import { PromptComposer } from "@/components/prompt-composer";
 
 type ComposerProps = {
   disabled?: boolean;
-  onSubmit: (prompt: string) => void;
+  onSubmit: (prompt: string) => void | Promise<void>;
 };
 
 export function Composer({ disabled, onSubmit }: ComposerProps) {
-  const [input, setInput] = useState("");
-
-  function handleSubmit(message: PromptInputMessage) {
-    const text = message.text.trim();
-    if (!text || disabled) return;
-    onSubmit(text);
-    setInput("");
-  }
-
   return (
-    <PromptInput onSubmit={handleSubmit}>
-      <PromptInputBody>
-        <PromptInputTextarea
-          className="min-h-28"
-          onChange={(event) => setInput(event.target.value)}
-          placeholder="Ask Cursor to build, fix bugs, explore"
-          value={input}
-        />
-      </PromptInputBody>
-      <PromptInputFooter>
-        <PromptInputTools></PromptInputTools>
-        <PromptInputSubmit />
-      </PromptInputFooter>
-    </PromptInput>
+    <PromptComposer
+      disabled={disabled}
+      onSubmit={onSubmit}
+      placeholder="Ask Luna agent to build, fix bugs, explore"
+      textareaClassName="min-h-28"
+    />
   );
 }
