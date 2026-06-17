@@ -12,7 +12,7 @@ function sliceLines(content: string, offset?: number, limit?: number) {
   return lines.slice(start, end).join("\n");
 }
 
-export function createReadFileTool(
+export function createReadTool(
   sandbox: ReturnType<typeof import("@cloudflare/sandbox").getSandbox>
 ) {
   return tool({

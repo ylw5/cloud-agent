@@ -79,6 +79,8 @@ function BashTool({ part, running }: CompactToolProps) {
     }
   }, [running, details]);
 
+  if (!title) return null;
+
   const boxClass =
     "w-full overflow-hidden rounded-lg border border-border/60 bg-muted/20";
 
@@ -101,7 +103,11 @@ function BashTool({ part, running }: CompactToolProps) {
   }
 
   return (
-    <Collapsible className="group/bash w-full" onOpenChange={setOpen} open={open}>
+    <Collapsible
+      className="group/bash w-full"
+      onOpenChange={setOpen}
+      open={open}
+    >
       <div className={boxClass}>
         <CollapsibleTrigger className="flex w-full min-w-0 items-center gap-2 px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground">
           <span className="relative inline-flex size-3.5 shrink-0 items-center justify-center">
@@ -148,6 +154,10 @@ export function CompactTool({ part, running }: CompactToolProps) {
     return <BashTool part={part} running={running} />;
   }
 
+  return <GenericTool part={part} running={running} />;
+}
+
+function GenericTool({ part, running }: CompactToolProps) {
   const label = getToolLabel(part);
   const output = formatToolOutput(part);
   const errorText = "errorText" in part ? part.errorText : undefined;
@@ -163,9 +173,7 @@ export function CompactTool({ part, running }: CompactToolProps) {
   }, [running, details]);
 
   if (!details) {
-    return (
-      <div className="py-0.5 text-sm text-muted-foreground">{label}</div>
-    );
+    return <div className="py-0.5 text-sm text-muted-foreground">{label}</div>;
   }
 
   return (

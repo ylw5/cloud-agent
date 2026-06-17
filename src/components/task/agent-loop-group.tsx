@@ -62,6 +62,11 @@ export function AgentLoopGroup({
   }, [runStartedAt, isRunning]);
 
   useEffect(() => {
+    if (isRunning || !runStartedAt) return;
+    setElapsed(elapsedSeconds(runStartedAt));
+  }, [runStartedAt, isRunning]);
+
+  useEffect(() => {
     if (isRunning) {
       setOpen(true);
       return;
@@ -78,7 +83,7 @@ export function AgentLoopGroup({
       : durationSeconds !== undefined
         ? `Worked for ${formatWorkedDuration(durationSeconds)}`
         : runStartedAt
-          ? `Worked for ${formatWorkedDuration(elapsedSeconds(runStartedAt))}`
+          ? `Worked for ${formatWorkedDuration(elapsed)}`
           : "Worked";
 
   return (

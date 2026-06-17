@@ -18,19 +18,15 @@ function getToolInput(part: ToolPart): ToolInput {
   return input && typeof input === "object" ? (input as ToolInput) : {};
 }
 
-function fallbackBashTitle(command: string) {
-  const program = command.trim().split(/\s+/)[0];
-  return program ? `Run ${program}` : "Run command";
-}
+export function getBashTitle(part: ToolPart): string | null {
+  if (part.state === "input-streaming") {
+    return null;
+  }
 
-export function getBashTitle(part: ToolPart): string {
   const input = getToolInput(part);
   const description =
     typeof input.description === "string" ? input.description.trim() : "";
-  if (description) return description;
-
-  const command = typeof input.command === "string" ? input.command : "";
-  return fallbackBashTitle(command);
+  return description || null;
 }
 
 export type ToolDisplayStyle = "plain" | "boxed";
@@ -46,15 +42,17 @@ export function getToolLabel(part: ToolPart): string {
   const input = getToolInput(part);
 
   switch (name) {
-    case "bash":
-      return `$ ${getBashTitle(part)}`;
-    case "read_file": {
+    case "bash": {
+      const title = getBashTitle(part);
+      return title ? `$ ${title}` : "$ Run command";
+    }
+    case "read": {
       const path =
         typeof input.file_path === "string" ? input.file_path : "file";
       const fileName = path.split("/").pop() || path;
       return `Read ${fileName}`;
     }
-    case "write_file": {
+    case "write": {
       const path =
         typeof input.file_path === "string" ? input.file_path : "file";
       const fileName = path.split("/").pop() || path;
@@ -100,7 +98,7 @@ export function formatToolOutput(part: ToolPart): string | null {
     return body ? `$ ${command}\n\n${body}` : `$ ${command}`;
   }
 
-  if (name === "read_file" && output && typeof output === "object") {
+  if (name === "read" && output && typeof output === "object") {
     const content =
       "content" in output && typeof output.content === "string"
         ? output.content
@@ -108,7 +106,7 @@ export function formatToolOutput(part: ToolPart): string | null {
     return content ?? JSON.stringify(output, null, 2);
   }
 
-  if (name === "write_file" && output && typeof output === "object") {
+  if (name === "write" && output && typeof output === "object") {
     const path =
       "path" in output && typeof output.path === "string" ? output.path : null;
     return path ? `Wrote ${path}` : "File saved";

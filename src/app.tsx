@@ -10,7 +10,7 @@ import {
   useParams
 } from "react-router-dom";
 
-export default function App() {
+export function App() {
   return (
     <Routes>
       <Route element={<HomeRoute />} path="/" />

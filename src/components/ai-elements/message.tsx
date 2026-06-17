@@ -320,13 +320,48 @@ export type MessageResponseProps = ComponentProps<typeof Streamdown>;
 
 const streamdownPlugins = { cjk, code, math, mermaid };
 
-export const MessageResponse = memo(
-  ({ className, ...props }: MessageResponseProps) => (
-    <Streamdown
+const markdownComponents: MessageResponseProps["components"] = {
+  h1: ({ className, ...props }) => (
+    <h1
+      className={cn("mt-6 mb-3 text-xl leading-8 font-semibold", className)}
+      {...props}
+    />
+  ),
+  h2: ({ className, ...props }) => (
+    <h2
+      className={cn("mt-5 mb-2.5 text-lg leading-7 font-semibold", className)}
+      {...props}
+    />
+  ),
+  h3: ({ className, ...props }) => (
+    <h3
+      className={cn("mt-4 mb-2 text-base leading-7 font-semibold", className)}
+      {...props}
+    />
+  ),
+  hr: ({ className, ...props }) => (
+    <hr className={cn("my-6 border-border", className)} {...props} />
+  ),
+  inlineCode: ({ className, ...props }) => (
+    <code
       className={cn(
-        "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+        "rounded-md bg-muted px-1.5 py-0.5 text-[0.85em]",
         className
       )}
+      {...props}
+    />
+  )
+};
+
+export const MessageResponse = memo(
+  ({ className, components, ...props }: MessageResponseProps) => (
+    <Streamdown
+      className={cn(
+        "size-full text-sm leading-7 text-foreground [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+        "[&_p]:my-3 [&_ol]:my-3 [&_ul]:my-3 [&_li]:my-1.5 [&_li]:pl-1",
+        className
+      )}
+      components={{ ...markdownComponents, ...components }}
       plugins={streamdownPlugins}
       {...props}
     />
@@ -337,7 +372,6 @@ export const MessageResponse = memo(
 );
 
 MessageResponse.displayName = "MessageResponse";
-
 export type MessageToolbarProps = ComponentProps<"div">;
 
 export const MessageToolbar = ({
@@ -355,3 +389,4 @@ export const MessageToolbar = ({
     {children}
   </div>
 );
+

@@ -1,7 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 
-export function createWriteFileTool(
+export function createWriteTool(
   sandbox: ReturnType<typeof import("@cloudflare/sandbox").getSandbox>
 ) {
   return tool({

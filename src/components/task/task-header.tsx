@@ -12,12 +12,7 @@ type TaskHeaderProps = {
   onBack: () => void;
 };
 
-export function TaskHeader({
-  title,
-  meta,
-  status,
-  onBack
-}: TaskHeaderProps) {
+export function TaskHeader({ title, meta, status, onBack }: TaskHeaderProps) {
   const displayStatus = status ?? meta?.status;
   const badge = displayStatus
     ? getTaskStatusBadgeProps(displayStatus)
@@ -25,7 +20,13 @@ export function TaskHeader({
 
   return (
     <header className="flex shrink-0 items-center gap-3 border-b bg-muted/30 px-4 py-3">
-      <Button onClick={onBack} size="icon-sm" type="button" variant="ghost">
+      <Button
+        aria-label="Back to tasks"
+        onClick={onBack}
+        size="icon-sm"
+        type="button"
+        variant="ghost"
+      >
         <ArrowLeftIcon className="size-4" />
       </Button>
 

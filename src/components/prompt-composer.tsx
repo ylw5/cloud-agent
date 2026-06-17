@@ -63,7 +63,11 @@ export function PromptComposer({
           <div className="flex items-center gap-2">
             <SpeechInput
               aria-label="Start voice input"
-              className={running ? "bg-transparent text-muted-foreground hover:bg-transparent hover:text-foreground" : ""}
+              className={
+                running
+                  ? "bg-transparent text-muted-foreground hover:bg-transparent hover:text-foreground"
+                  : ""
+              }
               lang="zh-CN"
               onAudioRecorded={transcribeAudio}
               onTranscriptionChange={appendTranscription}
