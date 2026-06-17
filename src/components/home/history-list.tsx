@@ -17,7 +17,7 @@ type TaskGroup = {
 };
 
 const TABS: { id: HistoryTab; label: string }[] = [
-  { id: "tasks", label: "任务" },
+  { id: "tasks", label: "任务" }
 ];
 
 const GROUP_ORDER = ["今天", "昨天", "过去 7 天", "本月", "更早"] as const;

@@ -94,14 +94,14 @@ export function TaskView({
         status={taskState?.status ?? meta?.status}
         title={title}
       />
-      <div className="flex min-h-0 flex-1 justify-center overflow-hidden px-4">
-        <div className="flex min-h-0 w-full max-w-3xl flex-col">
-          <TaskFeed
-            isStreaming={running}
-            messages={messages}
-            stickToBottomOnOpen={!!initialPrompt}
-            taskState={feedTaskState}
-          />
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <TaskFeed
+          isStreaming={running}
+          messages={messages}
+          stickToBottomOnOpen={!!initialPrompt}
+          taskState={feedTaskState}
+        />
+        <div className="mx-auto w-full max-w-3xl shrink-0">
           <TaskComposer
             onStop={stop}
             onSubmit={(text) => sendMessage({ text })}
