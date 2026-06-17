@@ -1,51 +1,67 @@
-import { useState } from "react";
 import { HomeView } from "@/components/home/home-view";
 import { TaskView } from "@/components/task/task-view";
 import { createTask } from "@/lib/storage";
-
-type View =
-  | { kind: "home" }
-  | { kind: "task"; taskId: string; initialPrompt?: string };
+import {
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useParams
+} from "react-router-dom";
 
 export default function App() {
-  const [view, setView] = useState<View>({ kind: "home" });
-  const [refreshKey, setRefreshKey] = useState(0);
+  return (
+    <Routes>
+      <Route element={<HomeRoute />} path="/" />
+      <Route element={<TaskRoute />} path="/tasks/:taskId" />
+      <Route element={<Navigate replace to="/" />} path="*" />
+    </Routes>
+  );
+}
 
-  function bumpRefresh() {
-    setRefreshKey((key) => key + 1);
-  }
+function HomeRoute() {
+  const navigate = useNavigate();
 
   function openTask(id: string) {
-    setView({ kind: "task", taskId: id });
+    navigate(`/tasks/${encodeURIComponent(id)}`);
   }
 
   async function handleHomeSubmit(prompt: string) {
     const id = crypto.randomUUID();
 
     await createTask({ id, title: prompt.slice(0, 80) });
-    bumpRefresh();
-    setView({ kind: "task", taskId: id, initialPrompt: prompt });
+    navigate(`/tasks/${encodeURIComponent(id)}`, {
+      state: { initialPrompt: prompt }
+    });
   }
 
-  if (view.kind === "task") {
-    return (
-      <TaskView
-        initialPrompt={view.initialPrompt}
-        onBack={() => {
-          bumpRefresh();
-          setView({ kind: "home" });
-        }}
-        onMetaChange={bumpRefresh}
-        taskId={view.taskId}
-      />
-    );
+  return <HomeView onOpenTask={openTask} onSubmit={handleHomeSubmit} />;
+}
+
+function TaskRoute() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { taskId } = useParams();
+
+  if (!taskId) {
+    return <Navigate replace to="/" />;
   }
 
   return (
-    <HomeView
-      onOpenTask={openTask}
-      onSubmit={handleHomeSubmit}
-      refreshKey={refreshKey}
+    <TaskView
+      initialPrompt={getInitialPrompt(location.state)}
+      onBack={() => navigate("/")}
+      taskId={taskId}
     />
   );
+}
+
+function getInitialPrompt(state: unknown) {
+  return typeof state === "object" &&
+    state !== null &&
+    "initialPrompt" in state &&
+    typeof state.initialPrompt === "string"
+    ? state.initialPrompt
+    : undefined;
 }

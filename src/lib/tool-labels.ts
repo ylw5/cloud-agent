@@ -25,16 +25,9 @@ function fallbackBashTitle(command: string) {
 
 export function getBashTitle(part: ToolPart): string {
   const input = getToolInput(part);
-  const inputTitle = typeof input.title === "string" ? input.title.trim() : "";
-  if (inputTitle) return inputTitle;
-
-  const output =
-    "output" in part && part.output && typeof part.output === "object"
-      ? (part.output as { title?: string })
-      : null;
-  const outputTitle =
-    typeof output?.title === "string" ? output.title.trim() : "";
-  if (outputTitle) return outputTitle;
+  const description =
+    typeof input.description === "string" ? input.description.trim() : "";
+  if (description) return description;
 
   const command = typeof input.command === "string" ? input.command : "";
   return fallbackBashTitle(command);
@@ -56,12 +49,14 @@ export function getToolLabel(part: ToolPart): string {
     case "bash":
       return `$ ${getBashTitle(part)}`;
     case "read_file": {
-      const path = typeof input.path === "string" ? input.path : "file";
+      const path =
+        typeof input.file_path === "string" ? input.file_path : "file";
       const fileName = path.split("/").pop() || path;
       return `Read ${fileName}`;
     }
     case "write_file": {
-      const path = typeof input.path === "string" ? input.path : "file";
+      const path =
+        typeof input.file_path === "string" ? input.file_path : "file";
       const fileName = path.split("/").pop() || path;
       return `Write ${fileName}`;
     }

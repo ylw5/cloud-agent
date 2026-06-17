@@ -1,5 +1,5 @@
 import { createDeepSeek } from "@ai-sdk/deepseek";
-import { getSandbox, Sandbox } from "@cloudflare/sandbox";
+import { Sandbox } from "@cloudflare/sandbox";
 import { AIChatAgent, type OnChatMessageOptions } from "@cloudflare/ai-chat";
 import type { ChatResponseResult } from "agents/chat";
 import { DurableObject } from "cloudflare:workers";
@@ -9,10 +9,11 @@ import {
   convertToModelMessages,
   pruneMessages,
   stepCountIs,
-  streamText,
-  tool
+  streamText
 } from "ai";
 import { z } from "zod";
+
+import { makeTools } from "@/tools";
 
 export { Sandbox };
 
@@ -168,18 +169,12 @@ function getRegistry(env: Env) {
   return env.TaskRegistry.get(env.TaskRegistry.idFromName("default"));
 }
 
-const MAX_OUTPUT = 12_000;
-const truncate = (text: string) =>
-  text.length > MAX_OUTPUT
-    ? `${text.slice(0, MAX_OUTPUT)}\n...[truncated]`
-    : text;
-
 const SYSTEM_PROMPT = [
   "You are an autonomous software agent running inside an isolated Linux sandbox.",
   "Complete the user's task by inspecting, acting, observing, and repeating.",
   "Use bash for shell commands (ls, git, grep, find, build, run, etc.).",
-  "When calling bash, always set title to a short UI label for the action.",
-  "Use read_file and write_file for reading and writing text files.",
+  "When calling bash, set description to a concise active-voice label when useful.",
+  "Use read_file and write_file with absolute file_path values for reading and writing text files.",
   "Do not ask for approval. Make reasonable assumptions and continue.",
   "When finished, return a clear Markdown report with what changed and how it was verified."
 ].join("\n");
@@ -190,66 +185,6 @@ function makeModel(env: Env) {
   });
 
   return deepseek(env.DEEPSEEK_MODEL || "deepseek-chat");
-}
-
-function fallbackBashTitle(command: string) {
-  const program = command.trim().split(/\s+/)[0];
-  return program ? `Run ${program}` : "Run command";
-}
-
-function makeTools(env: Env, sandboxId: string) {
-  const sandbox = () => getSandbox(env.Sandbox, sandboxId);
-
-  return {
-    bash: tool({
-      description:
-        "Run a shell command in the isolated Linux sandbox. Provide a short title describing the action.",
-      inputSchema: z.object({
-        command: z.string(),
-        title: z
-          .string()
-          .describe(
-            "Short UI label, e.g. 'List workspace root directory' or 'Fetch GitHub repo owner/name'."
-          ),
-        cwd: z.string().default("/workspace")
-      }),
-      execute: async ({ command, title, cwd }) => {
-        const result = await sandbox().exec(command, { cwd, timeout: 120_000 });
-
-        return {
-          title: title.trim() || fallbackBashTitle(command),
-          success: result.success,
-          exitCode: result.exitCode,
-          stdout: truncate(result.stdout ?? ""),
-          stderr: truncate(result.stderr ?? "")
-        };
-      }
-    }),
-
-    read_file: tool({
-      description: "Read a UTF-8 text file from the sandbox filesystem.",
-      inputSchema: z.object({
-        path: z.string()
-      }),
-      execute: async ({ path }) => {
-        const file = await sandbox().readFile(path);
-        return { content: truncate(file.content) };
-      }
-    }),
-
-    write_file: tool({
-      description:
-        "Create or overwrite a UTF-8 text file in the sandbox filesystem.",
-      inputSchema: z.object({
-        path: z.string(),
-        content: z.string()
-      }),
-      execute: async ({ path, content }) => {
-        await sandbox().writeFile(path, content);
-        return { ok: true, path };
-      }
-    })
-  };
 }
 
 function firstUserText(messages: typeof AIChatAgent.prototype.messages) {
