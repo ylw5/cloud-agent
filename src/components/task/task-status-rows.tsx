@@ -23,8 +23,8 @@ export function TaskStatusRows({
   return (
     <Collapsible defaultOpen={false}>
       <CollapsibleTrigger className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-        <ChevronRightIcon className="size-3.5 transition-transform group-data-[state=open]:rotate-90" />
         Environment ready
+        <ChevronRightIcon className="size-3.5 transition-transform group-data-[state=open]:rotate-90" />
       </CollapsibleTrigger>
       <CollapsibleContent />
     </Collapsible>

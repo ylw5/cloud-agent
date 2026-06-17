@@ -1,7 +1,9 @@
 import dayjs from "dayjs";
+import "dayjs/locale/zh-cn";
 import relativeTime from "dayjs/plugin/relativeTime";
 
 dayjs.extend(relativeTime);
+dayjs.locale("zh-cn");
 
 export type TaskStatus = "idle" | "running" | "done" | "error";
 
@@ -43,4 +45,8 @@ export async function getTask(id: string): Promise<TaskMeta | undefined> {
 
 export function formatRelativeTime(iso: string): string {
   return dayjs(iso).fromNow();
+}
+
+export function formatTaskDate(iso: string): string {
+  return dayjs(iso).format("M月D日");
 }

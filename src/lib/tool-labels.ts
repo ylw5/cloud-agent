@@ -52,6 +52,12 @@ export function getToolLabel(part: ToolPart): string {
       const fileName = path.split("/").pop() || path;
       return `Read ${fileName}`;
     }
+    case "edit": {
+      const path =
+        typeof input.file_path === "string" ? input.file_path : "file";
+      const fileName = path.split("/").pop() || path;
+      return `Edit ${fileName}`;
+    }
     case "write": {
       const path =
         typeof input.file_path === "string" ? input.file_path : "file";
@@ -82,8 +88,15 @@ export function formatToolOutput(part: ToolPart): string | null {
       stdout?: string;
       stderr?: string;
       exitCode?: number;
+      processId?: string;
+      running?: boolean;
+      message?: string;
     };
     const body = [
+      result.message?.trim(),
+      result.running && result.processId
+        ? `[background ${result.processId}]`
+        : undefined,
       result.stdout?.trim(),
       result.stderr?.trim() ? `[stderr]\n${result.stderr.trim()}` : undefined,
       result.exitCode !== undefined && result.exitCode !== 0
@@ -106,10 +119,24 @@ export function formatToolOutput(part: ToolPart): string | null {
     return content ?? JSON.stringify(output, null, 2);
   }
 
-  if (name === "write" && output && typeof output === "object") {
+  if (
+    (name === "edit" || name === "write") &&
+    output &&
+    typeof output === "object"
+  ) {
     const path =
       "path" in output && typeof output.path === "string" ? output.path : null;
-    return path ? `Wrote ${path}` : "File saved";
+    if (
+      "oldValue" in output &&
+      "newValue" in output &&
+      typeof output.oldValue === "string" &&
+      typeof output.newValue === "string"
+    ) {
+      return null;
+    }
+    return path
+      ? `${name === "edit" ? "Edited" : "Wrote"} ${path}`
+      : "File saved";
   }
 
   if (typeof output === "string") return output;

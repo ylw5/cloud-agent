@@ -93,13 +93,13 @@ export function AgentLoopGroup({
       open={open}
     >
       <CollapsibleTrigger className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
+        {label}
         <ChevronRightIcon
           className={cn(
             "size-3.5 shrink-0 transition-transform",
             open && "rotate-90"
           )}
         />
-        {label}
       </CollapsibleTrigger>
       <CollapsibleContent className="flex flex-col gap-3">
         {children}
