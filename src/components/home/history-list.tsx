@@ -136,7 +136,7 @@ export function HistoryList({ refreshKey = 0, onOpenTask }: HistoryListProps) {
         ) : (
           groups.map((group) => (
             <div key={group.label}>
-              <div className="sticky px-1.5 top-0 bg-muted/30 py-3 text-xs text-muted-foreground backdrop-blur-sm">
+              <div className="px-1.5 py-3 text-xs text-muted-foreground">
                 {group.label}
               </div>
               {group.tasks.map((task) => (
