@@ -1,5 +1,5 @@
 import { createDeepSeek } from "@ai-sdk/deepseek";
-import { Sandbox } from "@cloudflare/sandbox";
+import { getSandbox, Sandbox, type DirectoryBackup } from "@cloudflare/sandbox";
 import { AIChatAgent, type OnChatMessageOptions } from "@cloudflare/ai-chat";
 import type { ChatResponseResult } from "agents/chat";
 import { DurableObject } from "cloudflare:workers";
@@ -7,12 +7,15 @@ import { routeAgentRequest } from "agents";
 import {
   consumeStream,
   convertToModelMessages,
+  generateText,
   pruneMessages,
   stepCountIs,
-  streamText
+  streamText,
+  type ModelMessage
 } from "ai";
 import { z } from "zod";
 
+import { buildContextMessages } from "@/lib/context-memory";
 import { makeTools } from "@/tools";
 
 export { Sandbox };
@@ -21,6 +24,10 @@ type TaskState = {
   status: "idle" | "running" | "done" | "error";
   title: string;
   sandboxId: string;
+  workspaceBackup: DirectoryBackup | null;
+  contextSummary: string;
+  summarizedMessageCount: number;
+  contextCompactedAt: string;
   createdAt: string;
   runStartedAt: string;
   runTimings: Record<string, number>;
@@ -202,6 +209,10 @@ export class TaskAgent extends AIChatAgent<Env, TaskState> {
     status: "idle",
     title: "",
     sandboxId: "",
+    workspaceBackup: null,
+    contextSummary: "",
+    summarizedMessageCount: 0,
+    contextCompactedAt: "",
     createdAt: "",
     runStartedAt: "",
     runTimings: {},
@@ -235,8 +246,33 @@ export class TaskAgent extends AIChatAgent<Env, TaskState> {
     });
   }
 
+  private async summarizeContext(
+    messages: ModelMessage[],
+    previousSummary: string
+  ) {
+    const { text } = await generateText({
+      model: makeModel(this.env),
+      system: [
+        "Summarize old agent context for a software task runner.",
+        "Preserve user goal, current task status, files/commands touched, decisions, errors/blockers, and next steps.",
+        "Be concise and factual. Mention that full historical UI messages still exist outside active model context."
+      ].join("\n"),
+      messages: [
+        {
+          role: "user",
+          content:
+            `Previous summary:\n${previousSummary || "(none)"}\n\n` +
+            `Old messages to summarize:\n${JSON.stringify(messages)}`
+        }
+      ]
+    });
+
+    return text;
+  }
+
   async onChatMessage(_onFinish: unknown, options?: OnChatMessageOptions) {
     const sandboxId = this.name;
+    const sandbox = getSandbox(this.env.Sandbox, sandboxId);
     const title = firstUserText(this.messages).slice(0, 80);
 
     const runStartedAt = options?.continuation
@@ -248,21 +284,47 @@ export class TaskAgent extends AIChatAgent<Env, TaskState> {
       status: "running",
       title,
       sandboxId,
+      workspaceBackup: this.state.workspaceBackup ?? null,
+      contextSummary: this.state.contextSummary ?? "",
+      summarizedMessageCount: this.state.summarizedMessageCount ?? 0,
+      contextCompactedAt: this.state.contextCompactedAt ?? "",
       createdAt: this.state.createdAt || new Date().toISOString(),
       runStartedAt,
       error: null
     } satisfies TaskState;
     this.setState(runningState);
     await this.reportToRegistry(runningState);
+    if (this.state.workspaceBackup) {
+      await sandbox.restoreBackup(this.state.workspaceBackup);
+    }
+
+    const prunedMessages = pruneMessages({
+      messages: await convertToModelMessages(this.messages),
+      reasoning: "before-last-message",
+      toolCalls: "before-last-2-messages"
+    });
+
+    let modelMessages = prunedMessages;
+    try {
+      const context = await buildContextMessages({
+        messages: prunedMessages,
+        memory: this.state,
+        summarize: (messages, previousSummary) =>
+          this.summarizeContext(messages, previousSummary)
+      });
+      modelMessages = context.messages;
+      if (context.memory.contextCompactedAt !== this.state.contextCompactedAt) {
+        this.setState({ ...this.state, ...context.memory });
+      }
+    } catch {
+      modelMessages = prunedMessages;
+    }
 
     const result = streamText({
       model: makeModel(this.env),
       system: SYSTEM_PROMPT,
-      messages: pruneMessages({
-        messages: await convertToModelMessages(this.messages),
-        toolCalls: "before-last-2-messages"
-      }),
-      tools: makeTools(this.env, sandboxId),
+      messages: modelMessages,
+      tools: makeTools(sandbox),
       stopWhen: stepCountIs(25),
       abortSignal: options?.abortSignal
     });
@@ -271,9 +333,17 @@ export class TaskAgent extends AIChatAgent<Env, TaskState> {
       consumeSseStream: ({ stream }) =>
         this.ctx.waitUntil(consumeStream({ stream })),
       onFinish: async ({ isAborted }) => {
+        const workspaceBackup = isAborted
+          ? this.state.workspaceBackup
+          : await sandbox.createBackup({
+              dir: "/workspace",
+              gitignore: true,
+              ttl: 60 * 60 * 24 * 7
+            });
         const nextState = {
           ...this.state,
           status: isAborted ? "idle" : "done",
+          workspaceBackup,
           error: null
         } satisfies TaskState;
         this.setState(nextState);

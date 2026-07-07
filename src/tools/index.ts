@@ -1,13 +1,11 @@
-import { getSandbox } from "@cloudflare/sandbox";
-
 import { createBashTool } from "./bash";
 import { createEditTool } from "./edit";
 import { createReadTool } from "./read";
 import { createWriteTool } from "./write";
 
-export function makeTools(env: Env, sandboxId: string) {
-  const sandbox = getSandbox(env.Sandbox, sandboxId);
+type Sandbox = ReturnType<typeof import("@cloudflare/sandbox").getSandbox>;
 
+export function makeTools(sandbox: Sandbox) {
   return {
     bash: createBashTool(sandbox),
     edit: createEditTool(sandbox),

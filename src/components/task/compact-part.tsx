@@ -248,32 +248,7 @@ function FileDiffTool({
               rightTitle={fileName}
               showDiffOnly
               splitView={false}
-              styles={{
-                contentText: {
-                  fontFamily: "var(--font-mono), monospace",
-                  fontSize: "12px",
-                  lineHeight: "20px"
-                },
-                lineNumber: {
-                  fontFamily: "var(--font-mono), monospace",
-                  fontSize: "12px"
-                },
-                variables: {
-                  dark: {
-                    addedBackground: "rgba(16, 185, 129, 0.14)",
-                    addedColor: "inherit",
-                    removedBackground: "rgba(244, 63, 94, 0.14)",
-                    removedColor: "inherit"
-                  },
-                  light: {
-                    addedBackground: "rgba(16, 185, 129, 0.14)",
-                    addedColor: "inherit",
-                    removedBackground: "rgba(244, 63, 94, 0.14)",
-                    removedColor: "inherit"
-                  }
-                }
-              }}
-              useDarkTheme={false}
+              useDarkTheme
             />
           </div>
           {output.truncated ? (

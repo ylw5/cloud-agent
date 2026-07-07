@@ -9,7 +9,7 @@ Use Cloudflare Sandbox SDK directory backups instead of a custom tar/R2 flow.
 ```ts
 const backup = await sandbox.createBackup({
   dir: "/workspace",
-  useGitignore: true,
+  gitignore: true,
   ttl: 60 * 60 * 24 * 7
 });
 
@@ -22,16 +22,24 @@ This restores files, not running processes, shell sessions, environment variable
 
 - Upgrade `@cloudflare/sandbox` and the Docker base image together so the Worker types and container runtime both support backups.
 - Add the required R2 bucket/secrets for SDK backups.
-- Store the returned backup handle on `TaskAgent` state, e.g. `workspaceBackup`.
+- Store the returned backup handle on `TaskAgent` state as `workspaceBackup`.
 - At the start of a run, restore `workspaceBackup` before creating tools.
 - After a successful run, create a fresh `/workspace` backup and save it back to state.
 
 ## Defaults
 
 - Snapshot only `/workspace`.
-- Use `useGitignore: true`.
+- Use `gitignore: true`.
 - Use a 7 day TTL.
 - Keep stable tools in the Docker image; use backups only for mutable workspace files.
+
+## Cloudflare setup
+
+```sh
+npx wrangler r2 bucket create cloud-agent-backups
+npx wrangler secret put R2_ACCESS_KEY_ID
+npx wrangler secret put R2_SECRET_ACCESS_KEY
+```
 
 ## Check
 

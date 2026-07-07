@@ -235,8 +235,8 @@ cloud-agent/
 
 ## TODO
 
-- [ ] 按 [Pi-Style Context Compression For Cloud Agent](docs/pi-style-context-compression.md) 为 `TaskAgent` 增加上下文压缩。
-- [ ] 按 [Sandbox snapshot follow-up](docs/sandbox-snapshot.md) 为 `/workspace` 增加 Sandbox SDK backup/restore。
+- [x] 按 [Pi-Style Context Compression For Cloud Agent](docs/pi-style-context-compression.md) 为 `TaskAgent` 增加上下文压缩。
+- [x] 按 [Sandbox snapshot follow-up](docs/sandbox-snapshot.md) 为 `/workspace` 增加 Sandbox SDK backup/restore。
 
 ## License
 

@@ -33,6 +33,12 @@
       }
     ]
   },
+  "r2_buckets": [
+    {
+      "binding": "BACKUP_BUCKET",
+      "bucket_name": "cloud-agent-backups"
+    }
+  ],
   "migrations": [
     {
       "new_sqlite_classes": ["TaskAgent", "Sandbox"],
@@ -44,6 +50,8 @@
     }
   ],
   "vars": {
+    "BACKUP_BUCKET_NAME": "cloud-agent-backups",
+    "CLOUDFLARE_ACCOUNT_ID": "42858c96007b726ffb88ee5e50eed404",
     "DEEPSEEK_MODEL": "deepseek-v4-pro"
   }
 }
