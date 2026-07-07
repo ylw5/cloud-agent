@@ -30,6 +30,10 @@ function formatWorkedDuration(seconds: number) {
   });
 }
 
+function formatDurationLabel(prefix: string, seconds: number) {
+  return `${prefix} ${formatWorkedDuration(seconds)}`;
+}
+
 function isActiveLoop(
   isLastMessage: boolean,
   isStreaming: boolean,
@@ -76,15 +80,16 @@ export function AgentLoopGroup({
     return () => window.clearTimeout(timer);
   }, [isRunning]);
 
+  const finishedDuration = durationSeconds ?? (runStartedAt ? elapsed : null);
   const label = isRunning
-    ? `Worked for ${formatWorkedDuration(elapsed)}`
+    ? formatDurationLabel("Working for", elapsed)
     : taskStatus === "error" && isLastMessage
-      ? "Run failed"
-      : durationSeconds !== undefined
-        ? `Worked for ${formatWorkedDuration(durationSeconds)}`
-        : runStartedAt
-          ? `Worked for ${formatWorkedDuration(elapsed)}`
-          : "Worked";
+      ? finishedDuration === null
+        ? "Run failed"
+        : formatDurationLabel("Failed after", finishedDuration)
+      : finishedDuration === null
+        ? "Work log"
+        : formatDurationLabel("Worked for", finishedDuration);
 
   return (
     <Collapsible
