@@ -11,7 +11,9 @@ import {
   pruneMessages,
   stepCountIs,
   streamText,
-  type ModelMessage
+  type ModelMessage,
+  type StreamTextOnFinishCallback,
+  type ToolSet
 } from "ai";
 import { z } from "zod";
 
@@ -270,7 +272,10 @@ export class TaskAgent extends AIChatAgent<Env, TaskState> {
     return text;
   }
 
-  async onChatMessage(_onFinish: unknown, options?: OnChatMessageOptions) {
+  async onChatMessage(
+    onFinish: StreamTextOnFinishCallback<ToolSet>,
+    options?: OnChatMessageOptions
+  ) {
     const sandboxId = this.name;
     const sandbox = getSandbox(this.env.Sandbox, sandboxId);
     const title = firstUserText(this.messages).slice(0, 80);
@@ -320,47 +325,68 @@ export class TaskAgent extends AIChatAgent<Env, TaskState> {
       modelMessages = prunedMessages;
     }
 
+    const finishRun = async (status: TaskState["status"]) => {
+      const workspaceBackup =
+        status === "done"
+          ? await sandbox.createBackup({
+              dir: "/workspace",
+              gitignore: true,
+              ttl: 60 * 60 * 24 * 7
+            })
+          : this.state.workspaceBackup;
+      const nextState = {
+        ...this.state,
+        status,
+        workspaceBackup,
+        error: null
+      } satisfies TaskState;
+      this.setState(nextState);
+      await this.reportToRegistry(nextState);
+    };
+
+    const failRun = async (error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      const nextState = {
+        ...this.state,
+        status: "error",
+        error: message
+      } satisfies TaskState;
+      this.setState(nextState);
+      await this.reportToRegistry(nextState);
+      return message;
+    };
+
     const result = streamText({
       model: makeModel(this.env),
       system: SYSTEM_PROMPT,
       messages: modelMessages,
       tools: makeTools(sandbox),
       stopWhen: stepCountIs(25),
-      abortSignal: options?.abortSignal
+      abortSignal: options?.abortSignal,
+      onAbort: () => finishRun("idle"),
+      onError: (event) => {
+        this.ctx.waitUntil(failRun(event.error));
+      },
+      onFinish: async (event) => {
+        try {
+          await onFinish(
+            event as unknown as Parameters<
+              StreamTextOnFinishCallback<ToolSet>
+            >[0]
+          );
+        } finally {
+          await finishRun("done");
+        }
+      }
     });
 
     return result.toUIMessageStreamResponse({
       consumeSseStream: ({ stream }) =>
         this.ctx.waitUntil(consumeStream({ stream })),
-      onFinish: async ({ isAborted }) => {
-        const workspaceBackup = isAborted
-          ? this.state.workspaceBackup
-          : await sandbox.createBackup({
-              dir: "/workspace",
-              gitignore: true,
-              ttl: 60 * 60 * 24 * 7
-            });
-        const nextState = {
-          ...this.state,
-          status: isAborted ? "idle" : "done",
-          workspaceBackup,
-          error: null
-        } satisfies TaskState;
-        this.setState(nextState);
-        const report = this.reportToRegistry(nextState);
-        this.ctx.waitUntil(report);
-        await report;
-      },
       onError: (error) => {
-        const message = error instanceof Error ? error.message : String(error);
-        const nextState = {
-          ...this.state,
-          status: "error",
-          error: message
-        } satisfies TaskState;
-        this.setState(nextState);
-        this.ctx.waitUntil(this.reportToRegistry(nextState));
-        return message;
+        const report = failRun(error);
+        this.ctx.waitUntil(report);
+        return error instanceof Error ? error.message : String(error);
       }
     });
   }

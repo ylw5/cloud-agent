@@ -47,14 +47,17 @@ export function TaskView({
   });
 
   const running = status !== "ready";
+  const displayStatus =
+    running || !meta?.status ? taskState?.status : meta.status;
   const feedTaskState =
-    taskState ??
-    (meta
-      ? {
-          status: meta.status,
-          runStartedAt: meta.status === "running" ? meta.updatedAt : undefined
-        }
-      : null);
+    taskState && (running || taskState.status !== "running")
+      ? taskState
+      : meta
+        ? {
+            status: meta.status,
+            runStartedAt: meta.status === "running" ? meta.updatedAt : undefined
+          }
+        : null;
   const title =
     taskState?.title ||
     meta?.title ||
@@ -91,7 +94,7 @@ export function TaskView({
       <TaskHeader
         meta={meta}
         onBack={onBack}
-        status={taskState?.status ?? meta?.status}
+        status={displayStatus}
         title={title}
       />
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
